@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Murcia Inspect" />
+  <title>Murcia — Pre-Settlement & Defect Inspection</title>
+  <style>
+    :root {
+      --primary: #14284b;
+      --accent: #b8860b;
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #dc2626;
+      --success: #16a34a;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: env(safe-area-inset-bottom, 24px);
+    }
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: calc(env(safe-area-inset-top, 14px) + 10px) 16px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: 0.4px; }
+    header .sub { font-size: 11px; opacity: 0.8; display: block; margin-top: 2px; }
+    .btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: #e2e8f0; color: var(--text); }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-sm { padding: 8px 12px; font-size: 13px; border-radius: 8px; }
+    .container { max-width: 900px; margin: 0 auto; padding: 14px; }
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .card h2 { margin: 0 0 10px; font-size: 16px; color: var(--primary); }
+    .hidden { display: none !important; }
+    input[type="text"], input[type="email"], select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 16px;
+      background: #fff;
+      color: var(--text);
+    }
+    label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+
+    /* Unit List */
+    .filter-bar { display: grid; grid-template-columns: 1fr 130px; gap: 8px; margin-bottom: 12px; }
+    .unit-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .unit-item:active { background: #f8fafc; }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-clasico { background: #e2e8f0; color: #334155; }
+    .badge-terracotta { background: #ffedd5; color: #9a3412; }
+    .badge-cielo { background: #dbeafe; color: #1e40af; }
+    .badge-var { background: #fef3c7; color: #92400e; }
+    .badge-done { background: #dcfce7; color: #166534; }
+    .badge-booked { background: #e0e7ff; color: #3730a3; }
+
+    /* Checklist & Specs */
+    .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .spec-box { background: #f8fafc; padding: 10px; border-radius: 10px; border: 1px solid var(--border); }
+    .spec-box .k { font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+    .spec-box .v { font-size: 14px; font-weight: 700; margin-top: 3px; }
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px;
+      background: #f8fafc;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+    }
+    .check-row input[type="checkbox"] { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--primary); }
+
+    /* Interactive Floor Plan Viewport */
+    .plan-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .plan-viewport {
+      width: 100%;
+      height: 400px;
+      background: #eef2f6;
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      touch-action: none;
+    }
+    .plan-viewport.pin-mode { border-color: var(--danger); border-style: solid; cursor: crosshair; }
+    .plan-stage {
+      position: absolute;
+      top: 0; left: 0;
+      transform-origin: 0 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .plan-stage img {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .plan-pin {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      margin-left: -14px;
+      margin-top: -28px;
+      background: var(--danger);
+      color: #fff;
+      border: 2px solid #fff;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+      pointer-events: auto;
+    }
+    .plan-pin span { transform: rotate(45deg); }
+
+    /* Trade Grid */
+    .trade-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+    .trade-btn {
+      padding: 11px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+    }
+    .trade-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      z-index: 100;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-sheet {
+      background: #fff;
+      width: 100%;
+      max-width: 650px;
+      max-height: 92vh;
+      overflow-y: auto;
+      border-radius: 20px 20px 0 0;
+      padding: 20px 16px calc(env(safe-area-inset-bottom, 20px) + 16px);
+    }
+
+    /* Signature Pad */
+    .sig-wrap {
+      border: 2px solid #cbd5e1;
+      border-radius: 12px;
+      background: #fff;
+      position: relative;
+      height: 170px;
+      touch-action: none;
+    }
+    canvas#sigCanvas { width: 100%; height: 100%; display: block; border-radius: 10px; }
+
+    /* Defect Cards */
+    .defect-row {
+      display: flex;
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+    .defect-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--danger); color: #fff;
+      font-weight: 700; font-size: 13px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .defect-thumb { width: 54px; height: 54px; border-radius: 8px; object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 200;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>MURCIA INSPECTIONS</h1>
+    <span class="sub" id="headerSub">Sarazin &bull; Drive Property</span>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button id="btnBack" class="btn btn-sm btn-secondary hidden" onclick="showDashboard()">&larr; Lots</button>
+    <button id="btnLogout" class="btn btn-sm btn-secondary hidden" onclick="logout()">Sign Out</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- SCREEN 1: STAFF EMAIL LOGIN -->
+  <div id="viewLogin" class="card" style="margin-top:24px;">
+    <h2>Staff Sign-In</h2>
+    <p style="font-size:14px;color:var(--muted);margin-top:0;">
+      Enter your authorised <strong>Sarazin</strong>, <strong>Drive Property</strong>, or <strong>Hutchinson Builders</strong> email address to load your assigned Murcia apartments.
+    </p>
+    <label for="loginEmail">Work Email Address</label>
+    <input type="email" id="loginEmail" placeholder="name@sarazin.com.au" autocomplete="email" />
+    <div style="margin-top:14px;">
+      <button id="btnLogin" class="btn" style="width:100%;" onclick="handleLogin()">Access Murcia Inspection App</button>
+    </div>
+    <p id="loginError" style="color:var(--danger);font-size:13px;margin-top:10px;" class="hidden"></p>
+  </div>
+
+  <!-- SCREEN 2: APARTMENT DASHBOARD -->
+  <div id="viewDashboard" class="hidden">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:13px;color:var(--muted);">Purchaser Self-Booking Link</div>
+        <div style="font-size:12px;color:var(--primary);font-weight:600;word-break:break-all;" id="bookingLinkDisplay"></div>
+      </div>
+      <button class="btn btn-sm btn-accent" onclick="copyBookingLink()">Copy Booking Link</button>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" id="searchInput" placeholder="Search Lot (e.g. 502), Level, or Purchaser..." oninput="renderUnitList()" />
+      <select id="statusFilter" onchange="renderUnitList()">
+        <option value="ALL">All Units</option>
+        <option value="SOLD">Sold Only</option>
+        <option value="BOOKED">Booked</option>
+        <option value="COMPLETED">Completed</option>
+        <option value="VARIATION">Has Variation</option>
+      </select>
+    </div>
+
+    <div id="unitListContainer"></div>
+  </div>
+
+  <!-- SCREEN 3: INDIVIDUAL APARTMENT INSPECTION -->
+  <div id="viewUnit" class="hidden">
+    <!-- Unit Header & Purchaser Info -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <h2 id="uTitle" style="font-size:20px;margin-bottom:4px;">Lot 301</h2>
+          <div id="uSubtitle" style="font-size:13px;color:var(--muted);">Level 3 &bull; TYPE A &bull; 1 BED, 1 BATH</div>
+        </div>
+        <span id="uStatusBadge" class="badge badge-clasico">SOLD</span>
+      </div>
+
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:13px;">
+        <div><strong>Purchaser(s):</strong> <span id="uPurchaser">-</span></div>
+        <div><strong>Contact:</strong> <span id="uContact">-</span></div>
+        <div><strong>Booking Slot:</strong> <span id="uBooking">-</span></div>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+          <a id="btnViewPlanDoc" href="#" target="_blank" class="btn btn-sm btn-secondary hidden">Open Contract Plan</a>
+          <a id="btnViewInclusionsDoc" href="#" target="_blank" class="btn btn-sm btn-secondary hidden">Open Inclusions PDF</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Selections & Variations Verification -->
+    <div class="card">
+      <h2>1. Finishes, Upgrades &amp; Variations Verification</h2>
+      <div class="spec-grid">
+        <div class="spec-box"><div class="k">Colour Scheme</div><div class="v" id="uColour">-</div></div>
+        <div class="spec-box"><div class="k">Upgrade Package</div><div class="v" id="uUpgrade">-</div></div>
+        <div class="spec-box"><div class="k">Wine Fridge (80)</div><div class="v" id="uWineFridge">-</div></div>
+        <div class="spec-box"><div class="k">F&amp;P Integrated Fridge</div><div class="v" id="uFpFridge">-</div></div>
+      </div>
+
+      <div id="uVariationBox" class="spec-box" style="margin-bottom:12px;background:#fffbeb;border-color:#fde68a;">
+        <div class="k" style="color:#92400e;">Contracted Variations &amp; Custom Specs</div>
+        <div class="v" id="uVariationDesc" style="font-size:13px;font-weight:500;line-height:1.45;margin-top:4px;">None</div>
+      </div>
+
+      <label class="check-row">
+        <input type="checkbox" id="chkColour" />
+        <span><strong>Colour Scheme &amp; Finishes Verified:</strong> Confirmed installed joinery, stone, tiles, and paint match contracted scheme.</span>
+      </label>
+      <label class="check-row">
+        <input type="checkbox" id="chkUpgrades" />
+        <span><strong>Upgrades, Appliances &amp; Variations Verified:</strong> Confirmed all contracted upgrades and variations are installed per plan.</span>
+      </label>
+    </div>
+
+    <!-- Interactive Floor Plan Pin-Dropper -->
+    <div class="card">
+      <h2>2. Digital Floor Plan &amp; Defect Pin-Dropper</h2>
+      <div class="plan-toolbar">
+        <button id="btnTogglePinMode" class="btn btn-sm btn-danger" onclick="togglePinMode()">+ Drop Defect Pin</button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm btn-secondary" onclick="zoomPlan(0.25)">Zoom +</button>
+          <button class="btn btn-sm btn-secondary" onclick="zoomPlan(-0.25)">Zoom &minus;</button>
+          <button class="btn btn-sm btn-secondary" onclick="resetPlanView()">Reset</button>
+        </div>
+      </div>
+      <p id="pinInstruction" style="font-size:12px;color:var(--muted);margin:0 0 8px;">
+        Pinch or use Zoom buttons to inspect plan. Tap <strong>+ Drop Defect Pin</strong>, then tap the exact defect location on the plan.
+      </p>
+
+      <div id="planViewport" class="plan-viewport">
+        <div id="planStage" class="plan-stage">
+          <img id="planImage" src="" alt="Apartment Floor Plan" />
+          <div id="pinsLayer" style="position:absolute;inset:0;pointer-events:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logged Defects List -->
+    <div class="card">
+      <h2>3. Recorded Defects (<span id="defectCount">0</span>)</h2>
+      <div id="defectListContainer">
+        <p style="font-size:13px;color:var(--muted);">No defects pinned for this apartment yet.</p>
+      </div>
+    </div>
+
+    <!-- Purchaser Finger Sign-Off -->
+    <div class="card">
+      <h2>4. Purchaser Pre-Settlement Sign-Off</h2>
+      <p style="font-size:13px;color:var(--muted);margin-top:0;">
+        Purchaser to sign below with finger to confirm selections inspected and defects noted above. Submitting packages all photos &amp; signed PDF into Google Drive and emails copies to Purchaser &amp; Hutchinson Builders.
+      </p>
+      <div class="sig-wrap">
+        <canvas id="sigCanvas"></canvas>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:10px;gap:10px;">
+        <button class="btn btn-sm btn-secondary" onclick="clearSignature()">Clear Signature</button>
+        <button id="btnSubmitSignOff" class="btn btn-success" style="flex:1;" onclick="submitSignOff()">Complete &amp; Send Sign-Off Package</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DEFECT INPUT MODAL -->
+<div id="defectModal" class="modal-backdrop hidden">
+  <div class="modal-sheet">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2 style="margin:0;">Log Defect at Pin (<span id="modalCoords"></span>)</h2>
+      <button class="btn btn-sm btn-secondary" onclick="closeDefectModal()">Cancel</button>
+    </div>
+
+    <label>Select Trade</label>
+    <div class="trade-grid" id="tradeGrid"></div>
+
+    <label for="defectLocation">Room / Area</label>
+    <input type="text" id="defectLocation" placeholder="e.g. Kitchen, Master Ensuite, Balcony, Bed 2" style="margin-bottom:12px;" />
+
+    <label for="defectNote">Defect Description / Note</label>
+    <textarea id="defectNote" rows="3" placeholder="Describe defect clearly for Hutchinson Builders..." style="margin-bottom:12px;"></textarea>
+
+    <label>Take / Attach Photo</label>
+    <input type="file" id="defectPhotoInput" accept="image/*" capture="environment" onchange="handlePhotoSelected(event)" style="margin-bottom:10px;" />
+    <img id="photoPreview" class="hidden" style="width:100%;max-height:180px;object-fit:contain;border-radius:10px;margin-bottom:12px;background:#f1f5f9;" />
+
+    <button id="btnSaveDefect" class="btn" style="width:100%;" onclick="saveDefect()">Save Defect &amp; Pin to Plan</button>
+  </div>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbxwGALuyeu7lkBk2MWH7olrnpCDQ6cPXMM0m-3rbhnig-FNmEh9Ny05HIK6AgFyObCK/exec';
+
+  let STATE = {
+    user: null,
+    units: [],
+    defectsByLot: {},
+    trades: ['Tiling', 'Plumbing', 'Electrical', 'Paint', 'Flooring', 'Caulking', 'Joinery', 'Carpentry/Drywalls'],
+    bookingLink: 'https://calendar.app.google/TqgH1XL6NdbiNP6L8',
+    currentUnit: null,
+    pinMode: false,
+    pendingPin: null,
+    selectedTrade: 'Paint',
+    pendingPhotoBase64: '',
+    planScale: 1,
+    planX: 0,
+    planY: 0
+  };
+
+  // Auto-restore session if saved
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedEmail = localStorage.getItem('murcia_staff_email');
+    if (savedEmail) {
+      document.getElementById('loginEmail').value = savedEmail;
+      handleLogin();
+    }
+    initSignaturePad();
+    initPlanGestures();
+  });
+
+  function showToast(msg, duration = 3200) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.add('hidden'), duration);
+  }
+
+  async function handleLogin() {
+    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+    const errEl = document.getElementById('loginError');
+    const btn = document.getElementById('btnLogin');
+    if (!email) return;
+
+    errEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.textContent = 'Verifying Access...';
+
+    try {
+      const res = await fetch(`${API_URL}?action=init&email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      if (!data.ok) {
+        errEl.textContent = data.error || 'Access denied.';
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Access Murcia Inspection App';
+        return;
+      }
+
+      localStorage.setItem('murcia_staff_email', email);
+      STATE.user = data.user;
+      STATE.units = data.units || [];
+      STATE.defectsByLot = data.defectsByLot || {};
+      if (data.trades) STATE.trades = data.trades;
+      if (data.bookingLink) STATE.bookingLink = data.bookingLink;
+
+      document.getElementById('headerSub').textContent = `${STATE.user.name} (${STATE.user.org} • ${STATE.user.role})`;
+      document.getElementById('bookingLinkDisplay').textContent = STATE.bookingLink;
+      document.getElementById('viewLogin').classList.add('hidden');
+      document.getElementById('btnLogout').classList.remove('hidden');
+      showDashboard();
+    } catch (e) {
+      errEl.textContent = 'Network error connecting to Murcia server: ' + e.message;
+      errEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Access Murcia Inspection App';
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem('murcia_staff_email');
+    location.reload();
+  }
+
+  function copyBookingLink() {
+    navigator.clipboard.writeText(STATE.bookingLink);
+    showToast('Purchaser booking link copied!');
+  }
+
+  function showDashboard() {
+    STATE.currentUnit = null;
+    document.getElementById('viewUnit').classList.add('hidden');
+    document.getElementById('btnBack').classList.add('hidden');
+    document.getElementById('viewDashboard').classList.remove('hidden');
+    renderUnitList();
+  }
+
+  function renderUnitList() {
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    const filter = document.getElementById('statusFilter').value;
+    const container = document.getElementById('unitListContainer');
+
+    const filtered = STATE.units.filter(u => {
+      const lot = String(u['Lot'] || '').toLowerCase();
+      const lvl = String(u['Level'] || '').toLowerCase();
+      const buyer = String(u['Purchaser Name(s)'] || '').toLowerCase();
+      const status = String(u['Sale Statusd'] || '').toUpperCase();
+      const booked = String(u['Pre-settlement Booking (Date / Time)'] || '').trim();
+      const done = String(u['Pre-settlement Completed (Date / Time)'] || '').trim();
+      const hasVar = String(u['Variation (Y/N)'] || '').toUpperCase() === 'Y';
+
+      if (q && !lot.includes(q) && !lvl.includes(q) && !buyer.includes(q)) return false;
+      if (filter === 'SOLD' && status !== 'SOLD') return false;
+      if (filter === 'BOOKED' && !booked) return false;
+      if (filter === 'COMPLETED' && !done) return false;
+      if (filter === 'VARIATION' && !hasVar) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="card"><p style="margin:0;color:var(--muted);">No matching apartments found.</p></div>';
+      return;
+    }
+
+    container.innerHTML = filtered.map(u => {
+      const lot = String(u['Lot']);
+      const defects = STATE.defectsByLot[lot] || [];
+      const scheme = String(u['Colour Scheme'] || 'CLASICO').toUpperCase();
+      const schemeClass = scheme === 'TERRACOTTA' ? 'badge-terracotta' : (scheme === 'CIELO' ? 'badge-cielo' : 'badge-clasico');
+      const done = String(u['Pre-settlement Completed (Date / Time)'] || '').trim();
+      const booked = String(u['Pre-settlement Booking (Date / Time)'] || '').trim();
+      const hasVar = String(u['Variation (Y/N)'] || '').toUpperCase() === 'Y';
+
+      return `
+        <div class="unit-item" onclick="openUnit('${lot.replace(/'/g, "\\'")}')">
+          <div>
+            <div style="font-size:17px;font-weight:700;color:var(--primary);">
+              Lot ${lot} <span style="font-size:13px;font-weight:500;color:var(--muted);">• Lvl ${u['Level']} • ${u['Type']}</span>
+            </div>
+            <div style="font-size:13px;color:var(--muted);margin-top:2px;">
+              ${u['Make-up']} ${u['Purchaser Name(s)'] ? '• ' + u['Purchaser Name(s)'] : ''}
+            </div>
+            <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap;">
+              <span class="badge ${schemeClass}">${scheme}</span>
+              ${hasVar ? '<span class="badge badge-var">Variation</span>' : ''}
+              ${booked ? `<span class="badge badge-booked">Booked: ${booked}</span>` : ''}
+              ${done ? '<span class="badge badge-done">Signed Off</span>' : ''}
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:18px;font-weight:800;color:${defects.length > 0 ? 'var(--danger)' : 'var(--muted)'};">${defects.length}</div>
+            <div style="font-size:11px;color:var(--muted);">Defects</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function openUnit(lot) {
+    const unit = STATE.units.find(u => String(u['Lot']) === String(lot));
+    if (!unit) return;
+    STATE.currentUnit = unit;
+    STATE.pinMode = false;
+    updatePinModeUI();
+
+    document.getElementById('viewDashboard').classList.add('hidden');
+    document.getElementById('viewUnit').classList.remove('hidden');
+    document.getElementById('btnBack').classList.remove('hidden');
+    window.scrollTo(0, 0);
+
+    document.getElementById('uTitle').textContent = `Lot ${unit['Lot']}`;
+    document.getElementById('uSubtitle').textContent = `Level ${unit['Level']} • ${unit['Type']} • ${unit['Make-up']}`;
+    document.getElementById('uStatusBadge').textContent = unit['Sale Statusd'] || '';
+    document.getElementById('uPurchaser').textContent = unit['Purchaser Name(s)'] || 'Not recorded';
+    document.getElementById('uContact').textContent = `${unit['Purchaser Phone'] || '-'} | ${unit['Purchaser Email'] || '-'}`;
+    document.getElementById('uBooking').textContent = unit['Pre-settlement Booking (Date / Time)'] || 'Unscheduled';
+
+    // Contract Floor Plan & Inclusions Links
+    const planLink = String(unit['Contract Floor Plan'] || '').trim();
+    const incLink = String(unit['Contract Inclusions List'] || '').trim();
+    const btnPlan = document.getElementById('btnViewPlanDoc');
+    const btnInc = document.getElementById('btnViewInclusionsDoc');
+
+    if (planLink) { btnPlan.href = planLink; btnPlan.classList.remove('hidden'); }
+    else { btnPlan.classList.add('hidden'); }
+
+    if (incLink) { btnInc.href = incLink; btnInc.classList.remove('hidden'); }
+    else { btnInc.classList.add('hidden'); }
+
+    // Selections & Variations
+    document.getElementById('uColour').textContent = unit['Colour Scheme'] || '-';
+    document.getElementById('uUpgrade').textContent = unit['Upgrade'] || '-';
+    document.getElementById('uWineFridge').textContent = unit['Wine Fridge (80)'] || '-';
+    document.getElementById('uFpFridge').textContent = unit['F&P Integrated Fridge'] || '-';
+    document.getElementById('uVariationDesc').textContent = unit['Variation Description'] || 'Standard layout — no custom variations.';
+
+    document.getElementById('chkColour').checked = false;
+    document.getElementById('chkUpgrades').checked = false;
+
+    // Load Floor Plan Image (supports Google Drive file links or direct PNG/JPG URLs)
+    const imgEl = document.getElementById('planImage');
+    imgEl.src = resolveFloorPlanImageUrl(planLink, unit['Lot'], unit['Type']);
+    resetPlanView();
+    clearSignature();
+    renderUnitDefects();
+  }
+
+  function resolveFloorPlanImageUrl(rawUrl, lot, unitType) {
+    if (rawUrl) {
+      // Convert Google Drive share link to direct image thumbnail/view
+      const driveMatch = rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || rawUrl.match(/id=([a-zA-Z0-9_-]+)/);
+      if (driveMatch) {
+        return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w1600`;
+      }
+      if (rawUrl.match(/\.(png|jpg|jpeg|webp|svg)/i)) return rawUrl;
+    }
+    // Fallback interactive architectural grid SVG if floor plan image URL not yet linked in Col N
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+      <rect width="800" height="600" fill="#f8fafc"/>
+      <defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2e8f0" stroke-width="1"/></pattern></defs>
+      <rect width="800" height="600" fill="url(#grid)"/>
+      <rect x="60" y="60" width="680" height="480" fill="none" stroke="#14284b" stroke-width="4"/>
+      <line x1="380" y1="60" x2="380" y2="340" stroke="#14284b" stroke-width="3"/>
+      <line x1="60" y1="340" x2="520" y2="340" stroke="#14284b" stroke-width="3"/>
+      <text x="400" y="290" font-family="sans-serif" font-size="22" font-weight="bold" fill="#14284b" text-anchor="middle">LOT ${lot} — ${unitType}</text>
+      <text x="400" y="320" font-family="sans-serif" font-size="14" fill="#64748b" text-anchor="middle">Tap "+ Drop Defect Pin" above and tap anywhere to mark defect location</text>
+    </svg>`;
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+
+  /* FLOOR PLAN ZOOM, PAN & PIN-DROPPING */
+  function zoomPlan(delta) {
+    STATE.planScale = Math.min(4, Math.max(1, STATE.planScale + delta));
+    if (STATE.planScale === 1) { STATE.planX = 0; STATE.planY = 0; }
+    applyPlanTransform();
+  }
+
+  function resetPlanView() {
+    STATE.planScale = 1;
+    STATE.planX = 0;
+    STATE.planY = 0;
+    applyPlanTransform();
+  }
+
+  function applyPlanTransform() {
+    const stage = document.getElementById('planStage');
+    stage.style.transform = `translate(${STATE.planX}px, ${STATE.planY}px) scale(${STATE.planScale})`;
+  }
+
+  function togglePinMode() {
+    STATE.pinMode = !STATE.pinMode;
+    updatePinModeUI();
+  }
+
+  function updatePinModeUI() {
+    const vp = document.getElementById('planViewport');
+    const btn = document.getElementById('btnTogglePinMode');
+    if (STATE.pinMode) {
+      vp.classList.add('pin-mode');
+      btn.textContent = 'Tap Plan Location Now...';
+    } else {
+      vp.classList.remove('pin-mode');
+      btn.textContent = '+ Drop Defect Pin';
+    }
+  }
+
+  function initPlanGestures() {
+    const vp = document.getElementById('planViewport');
+    let isDragging = false, startX = 0, startY = 0, moved = false;
+
+    vp.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      moved = false;
+      startX = e.clientX - STATE.planX;
+      startY = e.clientY - STATE.planY;
+    });
+
+    vp.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (Math.abs(dx - STATE.planX) > 4 || Math.abs(dy - STATE.planY) > 4) moved = true;
+      if (STATE.planScale > 1 && !STATE.pinMode) {
+        STATE.planX = dx;
+        STATE.planY = dy;
+        applyPlanTransform();
+      }
+    });
+
+    vp.addEventListener('pointerup', (e) => {
+      isDragging = false;
+      if (!moved && STATE.pinMode) {
+        const rect = document.getElementById('planStage').getBoundingClientRect();
+        const xPct = (((e.clientX - rect.left) / rect.width) * 100).toFixed(1);
+        const yPct = (((e.clientY - rect.top) / rect.height) * 100).toFixed(1);
+        openDefectModal(xPct, yPct);
+      }
+    });
+  }
+
+  /* DEFECT MODAL & CAMERA COMPRESSION */
+  function openDefectModal(xPct, yPct) {
+    STATE.pendingPin = { x: xPct, y: yPct };
+    STATE.pendingPhotoBase64 = '';
+    STATE.pinMode = false;
+    updatePinModeUI();
+
+    document.getElementById('modalCoords').textContent = `${xPct}%, ${yPct}%`;
+    document.getElementById('defectLocation').value = '';
+    document.getElementById('defectNote').value = '';
+    document.getElementById('defectPhotoInput').value = '';
+    document.getElementById('photoPreview').classList.add('hidden');
+
+    renderTradeButtons();
+    document.getElementById('defectModal').classList.remove('hidden');
+  }
+
+  function closeDefectModal() {
+    document.getElementById('defectModal').classList.add('hidden');
+  }
+
+  function renderTradeButtons() {
+    const grid = document.getElementById('tradeGrid');
+    grid.innerHTML = STATE.trades.map(t => `
+      <div class="trade-btn ${STATE.selectedTrade === t ? 'active' : ''}" onclick="selectTrade('${t}')">${t}</div>
+    `).join('');
+  }
+
+  function selectTrade(t) {
+    STATE.selectedTrade = t;
+    renderTradeButtons();
+  }
+
+  function handlePhotoSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // Compress image client-side to max 1280px width for fast upload
+        const canvas = document.createElement('canvas');
+        const maxW = 1280;
+        const scale = Math.min(1, maxW / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        STATE.pendingPhotoBase64 = canvas.toDataURL('image/jpeg', 0.78);
+
+        const prev = document.getElementById('photoPreview');
+        prev.src = STATE.pendingPhotoBase64;
+        prev.classList.remove('hidden');
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function saveDefect() {
+    const note = document.getElementById('defectNote').value.trim();
+    const location = document.getElementById('defectLocation').value.trim();
+    if (!note) {
+      alert('Please enter a short note describing the defect.');
+      return;
+    }
+
+    const btn = document.getElementById('btnSaveDefect');
+    btn.disabled = true;
+    btn.textContent = 'Uploading Photo & Pin...';
+
+    const lot = String(STATE.currentUnit['Lot']);
+    const payload = {
+      action: 'addDefect',
+      email: STATE.user.email,
+      lot: lot,
+      level: STATE.currentUnit['Level'],
+      unitType: STATE.currentUnit['Type'],
+      purchaserName: STATE.currentUnit['Purchaser Name(s)'] || '',
+      trade: STATE.selectedTrade,
+      location: location,
+      note: note,
+      planX: STATE.pendingPin.x,
+      planY: STATE.pendingPin.y,
+      photoBase64: STATE.pendingPhotoBase64
+    };
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Failed to save defect');
+
+      if (!STATE.defectsByLot[lot]) STATE.defectsByLot[lot] = [];
+      STATE.defectsByLot[lot].push(data.defect);
+
+      closeDefectModal();
+      renderUnitDefects();
+      showToast('Defect pinned & saved to Master Sheet!');
+    } catch (err) {
+      alert('Error saving defect: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save Defect & Pin to Plan';
+    }
+  }
+
+  function renderUnitDefects() {
+    const lot = String(STATE.currentUnit['Lot']);
+    const defects = STATE.defectsByLot[lot] || [];
+    document.getElementById('defectCount').textContent = defects.length;
+
+    // Render pins on floor plan
+    const pinsLayer = document.getElementById('pinsLayer');
+    pinsLayer.innerHTML = defects.map((d, idx) => {
+      if (!d.planX || !d.planY) return '';
+      return `<div class="plan-pin" style="left:${d.planX}%;top:${d.planY}%;" title="${d.trade}: ${d.note}"><span>${idx + 1}</span></div>`;
+    }).join('');
+
+    // Render defect list cards
+    const listEl = document.getElementById('defectListContainer');
+    if (defects.length === 0) {
+      listEl.innerHTML = '<p style="font-size:13px;color:var(--muted);">No defects pinned for this apartment yet.</p>';
+      return;
+    }
+
+    listEl.innerHTML = defects.map((d, idx) => `
+      <div class="defect-row">
+        <div class="defect-num">${idx + 1}</div>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--primary);">${d.trade} ${d.location ? '• ' + d.location : ''}</div>
+          <div style="font-size:14px;margin-top:2px;">${d.note}</div>
+          ${d.photoUrl ? `<a href="${d.photoUrl}" target="_blank" style="font-size:12px;color:var(--accent);font-weight:600;">View Full Photo &rarr;</a>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /* PURCHASER FINGER SIGNATURE PAD */
+  let sigCtx, sigDrawing = false, sigHasStrokes = false;
+
+  function initSignaturePad() {
+    const canvas = document.getElementById('sigCanvas');
+    sigCtx = canvas.getContext('2d');
+
+    const resize = () => {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      if (rect.width === 0) return;
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      sigCtx.lineWidth = 2.5;
+      sigCtx.lineCap = 'round';
+      sigCtx.strokeStyle = '#0f172a';
+    };
+    window.addEventListener('resize', resize);
+    setTimeout(resize, 300);
+
+    const getPos = (e) => {
+      const r = canvas.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (canvas.width === 0) resize();
+      sigDrawing = true;
+      sigHasStrokes = true;
+      const p = getPos(e);
+      sigCtx.beginPath();
+      sigCtx.moveTo(p.x, p.y);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!sigDrawing) return;
+      const p = getPos(e);
+      sigCtx.lineTo(p.x, p.y);
+      sigCtx.stroke();
+    });
+
+    window.addEventListener('pointerup', () => { sigDrawing = false; });
+  }
+
+  function clearSignature() {
+    const canvas = document.getElementById('sigCanvas');
+    if (sigCtx) sigCtx.clearRect(0, 0, canvas.width, canvas.height);
+    sigHasStrokes = false;
+  }
+
+  async function submitSignOff() {
+    const chk1 = document.getElementById('chkColour').checked;
+    const chk2 = document.getElementById('chkUpgrades').checked;
+    if (!chk1 || !chk2) {
+      alert('Please tick both verification checkboxes for Colour Scheme and Upgrades/Variations before signing off.');
+      return;
+    }
+    if (!sigHasStrokes) {
+      alert('Please have the purchaser sign on the signature pad before submitting.');
+      return;
+    }
+
+    const btn = document.getElementById('btnSubmitSignOff');
+    btn.disabled = true;
+    btn.textContent = 'Packaging PDF & Sending Emails...';
+
+    const canvas = document.getElementById('sigCanvas');
+    const sigBase64 = canvas.toDataURL('image/png');
+    const lot = String(STATE.currentUnit['Lot']);
+
+    const payload = {
+      action: 'completeInspection',
+      email: STATE.user.email,
+      lot: lot,
+      purchaserName: STATE.currentUnit['Purchaser Name(s)'] || '',
+      purchaserEmail: STATE.currentUnit['Purchaser Email'] || '',
+      selectionsConfirmed: true,
+      signatureBase64: sigBase64
+    };
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Failed to finalize sign-off');
+
+      STATE.currentUnit['Pre-settlement Completed (Date / Time)'] = 'Signed Off Just Now';
+      showToast('Inspection signed off, PDF packaged & emailed!');
+      alert(`Success! Apartment ${lot} inspection report packaged in Google Drive and emailed to Purchaser & Hutchinson Builders.\n\nFolder Link:\n${data.result.folderUrl}`);
+      showDashboard();
+    } catch (err) {
+      alert('Error submitting sign-off: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Complete & Send Sign-Off Package';
+    }
+  }
+</script>
+</body>
+</html>
